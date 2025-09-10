@@ -1,0 +1,18 @@
+a25 = [
+    [10, 5, 22, 18, 7],
+    [31, 14, 9, 25, 6]
+]
+
+max_value = float('-inf')
+row_index = -1
+col_index = -1
+
+for i in range(len(a25)):
+    for j in range(len(a25[i])):
+        if a25[i][j] > max_value:
+            max_value = a25[i][j]
+            row_index = i
+            col_index = j
+
+print(f"The largest element is: {max_value}")
+print(f"Its index is: ({row_index}, {col_index})")
