@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Погода в Казахстане</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="card" role="region" aria-label="Погода">
+    <h1>Погода в Казахстане 🇰🇿</h1>
+    <div class="meta" id="meta">Определяем местоположение...</div>
+
+    <div class="top">
+      <div>
+        <div class="temp" id="temp">--°C</div>
+        <div class="desc" id="desc">—</div>
+      </div>
+      <div class="icon" id="icon">☁️</div>
+    </div>
+
+    <div class="info-row">
+      <div>💧 Влажность: <span id="humidity">—</span></div>
+      <div>💨 Ветер: <span id="wind">—</span></div>
+    </div>
+
+    <div class="controls">
+      <input type="text" id="cityInput" placeholder="Введите город (Алматы, Шымкент...)" />
+      <button id="btnSearch">Показать</button>
+    </div>
+
+    <div class="note">Показывает текущую погоду и прогноз на 5 дней.</div>
+
+    <div class="forecast" id="forecast">
+      <h2>Прогноз на 5 дней</h2>
+      <div class="forecast-container" id="forecastContainer">Загрузка...</div>
+    </div>
+  </div>
+
+  <script>
+    const apiKey = "86c326909ce732a85832b98b60b26452";
+    const metaEl = document.getElementById('meta');
+    const tempEl = document.getElementById('temp');
+    const descEl = document.getElementById('desc');
+    const iconEl = document.getElementById('icon');
+    const humidityEl = document.getElementById('humidity');
+    const windEl = document.getElementById('wind');
+    const forecastContainer = document.getElementById('forecastContainer');
+    const btn = document.getElementById('btnSearch');
+    const cityInput = document.getElementById('cityInput');
+
+    btn.addEventListener('click', () => {
+      const city = cityInput.value.trim();
+      if (!city) return alert('Введите название города Казахстана.');
+      fetchByCity(city);
+    });
+
+    async function fetchByCity(city) {
+      metaEl.textContent = 'Загружаю погоду...';
+      try {
+        const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)},KZ&units=metric&lang=ru&appid=${apiKey}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Город не найден');
+        const data = await res.json();
+        renderWeather(data);
+        fetchForecast(city);
+      } catch (err) {
+        metaEl.textContent = 'Ошибка: ' + err.message;
+      }
+    }
+
+    async function fetchForecast(city) {
+      forecastContainer.textContent = 'Загружаю прогноз...';
+      try {
+        const url = `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(city)},KZ&units=metric&lang=ru&appid=${apiKey}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Ошибка загрузки прогноза');
+        const data = await res.json();
+        renderForecast(data);
+      } catch (err) {
+        forecastContainer.textContent = 'Ошибка прогноза: ' + err.message;
+      }
+    }
+
+    function renderWeather(data) {
+      tempEl.textContent = Math.round(data.main.temp) + '°C';
+      descEl.textContent = data.weather[0].description;
+      humidityEl.textContent = data.main.humidity + '%';
+      windEl.textContent = data.wind.speed + ' м/с';
+      metaEl.textContent = `${data.name}, Казахстан`;
+
+      const iconCode = data.weather[0].icon;
+      iconEl.innerHTML = `<img src="https://openweathermap.org/img/wn/${iconCode}@2x.png" width="64" height="64" alt="">`;
+    }
+
+    function renderForecast(data) {
+      // берём прогноз каждые 24 часа (в 12:00)
+      const daily = {};
+      data.list.forEach(item => {
+        if (item.dt_txt.includes("12:00:00")) {
+          const date = new Date(item.dt_txt);
+          daily[date.toDateString()] = item;
+        }
+      });
+
+      forecastContainer.innerHTML = '';
+      Object.values(daily).slice(0, 5).forEach(day => {
+        const date = new Date(day.dt_txt);
+        const options = { weekday: 'short', day: 'numeric', month: 'short' };
+        const dayStr = date.toLocaleDateString('ru-RU', options);
+        const icon = day.weather[0].icon;
+        const temp = Math.round(day.main.temp);
+        const desc = day.weather[0].description;
+
+        const div = document.createElement('div');
+        div.className = 'day';
+        div.innerHTML = `
+          <div class="day-name">${dayStr}</div>
+          <img src="https://openweathermap.org/img/wn/${icon}.png" alt="">
+          <div class="day-temp">${temp}°C</div>
+          <div class="day-desc">${desc}</div>
+        `;
+        forecastContainer.appendChild(div);
+      });
+    }
+
+    (async function init() {
+      try {
+        const ipRes = await fetch("https://ipapi.co/json/");
+        const ipData = await ipRes.json();
+        const city = ipData.country_code === "KZ" ? ipData.city || "Astana" : "Astana";
+        fetchByCity(city);
+      } catch {
+        fetchByCity("Astana");
+      }
+    })();
+  </script>
+</body>
+</html>
