@@ -1,0 +1,3 @@
+with open("workouts.txt", "w", encoding="utf-8") as f:
+    for w in workouts:
+        f.write(f"{w['exercise']} | Подходов: {w['sets']} | Повторений: {w['reps']} | Вес: {w['weight']} кг\n")

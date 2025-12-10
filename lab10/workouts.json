@@ -1,0 +1,2 @@
+with open("workouts.json", "w", encoding="utf-8") as jf:
+    json.dump(workouts, jf, ensure_ascii=False, indent=4)
